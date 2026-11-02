@@ -111,3 +111,6 @@ No other transitions are allowed.
   accept only the caller's own.
 - D37: Unused uploads (upload started, tool never saved) become orphans.
   Production fix: a scheduled cleanup job.
+- D38: Next.js Cache Components is disabled. The app is a signed-in, client-driven
+  UI over live Convex subscriptions, so server-side caching adds no value and its
+  instant-navigation validation conflicts with the auth gate.
