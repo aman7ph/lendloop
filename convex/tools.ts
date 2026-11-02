@@ -5,13 +5,38 @@ import { requireUser } from "./lib/auth";
 import { findCategory, normalizeCategoryName } from "./lib/categories";
 import { DEFAULT_MAX_LOAN_DAYS, MAX_ALLOWED_LOAN_DAYS } from "./lib/loanRules";
 
+const MAX_IMAGES = 3;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 const toolFields = {
   name: v.string(),
   category: v.string(),
   condition: v.string(),
   description: v.string(),
   maxLoanDays: v.optional(v.number()),
+  imageIds: v.optional(v.array(v.id("_storage"))),
 };
+
+async function validateImages(ctx: QueryCtx, ids: Id<"_storage">[]) {
+  if (ids.length > MAX_IMAGES) throw new Error("TOO_MANY_IMAGES");
+  if (new Set(ids).size !== ids.length) throw new Error("DUPLICATE_IMAGE");
+  for (const id of ids) {
+    const meta = await ctx.db.system.get(id);
+    if (!meta) throw new Error("INVALID_IMAGE");
+    if (!meta.contentType || !ALLOWED_TYPES.includes(meta.contentType)) {
+      throw new Error("INVALID_IMAGE_TYPE");
+    }
+    if (meta.size > MAX_IMAGE_BYTES) throw new Error("IMAGE_TOO_LARGE");
+  }
+}
+
+async function imageUrls(ctx: QueryCtx, ids: Id<"_storage">[] | undefined) {
+  const urls = await Promise.all(
+    (ids ?? []).map((id) => ctx.storage.getUrl(id)),
+  );
+  return urls.filter((u): u is string => u !== null);
+}
 
 async function isOnLoan(ctx: QueryCtx, toolId: Id<"tools">, now: number) {
   const loans = await ctx.db
@@ -93,8 +118,11 @@ export const list = query({
           available: !(await isOnLoan(ctx, t._id, now)),
           isMine: t.ownerId === user._id,
           ownerName: owner?.name ?? "Unknown",
+          ownerId: t.ownerId,
+          ownerImageUrl: owner?.imageUrl ?? null,
           ownerTrusted: owner?.trustedLender ?? false,
           maxLoanDays: t.maxLoanDays ?? DEFAULT_MAX_LOAN_DAYS,
+          imageUrls: await imageUrls(ctx, t.imageIds),
         };
       }),
     );
@@ -120,6 +148,8 @@ export const mine = query({
         description: t.description,
         available: !(await isOnLoan(ctx, t._id, now)),
         maxLoanDays: t.maxLoanDays ?? DEFAULT_MAX_LOAN_DAYS,
+        imageIds: t.imageIds ?? [],
+        imageUrls: await imageUrls(ctx, t.imageIds),
       })),
     );
   },
@@ -129,19 +159,36 @@ export const create = mutation({
   args: toolFields,
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const data = await cleanToolInput(ctx, args);
-    return await ctx.db.insert("tools", { ownerId: user._id, ...data });
+    const { imageIds, ...rest } = args;
+    const data = await cleanToolInput(ctx, rest);
+    if (imageIds) await validateImages(ctx, imageIds);
+    return await ctx.db.insert("tools", {
+      ownerId: user._id, // D4
+      ...data,
+      imageIds: imageIds ?? [],
+    });
   },
 });
 
 export const update = mutation({
   args: { toolId: v.id("tools"), ...toolFields },
-  handler: async (ctx, { toolId, ...fields }) => {
+  handler: async (ctx, { toolId, imageIds, ...fields }) => {
     const user = await requireUser(ctx);
     const tool = await ctx.db.get(toolId);
     if (!tool) throw new Error("NOT_FOUND");
     if (tool.ownerId !== user._id) throw new Error("FORBIDDEN");
-    await ctx.db.patch(toolId, await cleanToolInput(ctx, fields));
+
+    const patch: Record<string, unknown> = await cleanToolInput(ctx, fields);
+
+    if (imageIds !== undefined) {
+      await validateImages(ctx, imageIds);
+      patch.imageIds = imageIds;
+      const removed = (tool.imageIds ?? []).filter(
+        (id) => !imageIds.includes(id),
+      );
+      for (const id of removed) await ctx.storage.delete(id);
+    }
+    await ctx.db.patch(toolId, patch);
   },
 });
 
@@ -164,5 +211,14 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(toolId);
+    for (const id of tool.imageIds ?? []) await ctx.storage.delete(id);
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireUser(ctx);
+    return await ctx.storage.generateUploadUrl();
   },
 });

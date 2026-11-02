@@ -98,3 +98,16 @@ No other transitions are allowed.
   updated in the same transaction as the review, so they cannot drift.
 - D31: A tool has at most 3 images, enforced on the server. The public list
   never includes images.
+- D32: Signed-in tool listings include ownerId so the UI can link to a member
+  profile. The public list still exposes no ids.
+- D33: Deleting a review lets its author review that loan again. Accepted for
+  this scope. A production fix is soft-deleting and keeping the review slot used.
+- D34: Profile pictures come from the Clerk token (picture claim). There is no
+  custom upload, which removes an attack surface.
+- D35: Tool images are validated on the server: max 3, jpeg/png/webp, max 5 MB,
+  no duplicates. Only a tool's own removed images are deleted.
+- D36: Known gap: a client could attach a storage id that another user
+  uploaded. Production fix: record uploads in a table with the uploader and
+  accept only the caller's own.
+- D37: Unused uploads (upload started, tool never saved) become orphans.
+  Production fix: a scheduled cleanup job.

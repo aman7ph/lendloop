@@ -9,6 +9,7 @@ export const store = mutation({
 
     const name = identity.name ?? identity.email ?? "Neighbor";
     const email = identity.email ?? "";
+    const imageUrl = identity.pictureUrl;
 
     const existing = await ctx.db
       .query("users")
@@ -16,9 +17,14 @@ export const store = mutation({
       .unique();
 
     if (existing) {
-      if (existing.name !== name || existing.email !== email) {
-        await ctx.db.patch(existing._id, { name, email });
+      if (
+        existing.name !== name ||
+        existing.email !== email ||
+        existing.imageUrl !== imageUrl
+      ) {
+        await ctx.db.patch(existing._id, { name, email, imageUrl });
       }
+
       return existing._id;
     }
 
