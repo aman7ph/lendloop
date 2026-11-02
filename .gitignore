@@ -45,3 +45,4 @@ next-env.d.ts
 CLAUDE.md
 skills-lock.json
 !.env.example
+experimental_sandbox/*
