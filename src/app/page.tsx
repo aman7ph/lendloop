@@ -1,59 +1,18 @@
-"use client";
-
-import { useConvexAuth } from "convex/react";
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { useMutation } from "convex/react";
+import { Hero } from "@/components/landing/Hero";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { PublicToolStrip } from "@/components/landing/PublicToolStrip";
+import { RedirectIfSignedIn } from "@/components/landing/RedirectIfSignedIn";
 
 export default function Home() {
-  const { isLoading, isAuthenticated } = useConvexAuth();
-  const me = useQuery(api.users.me);
-
-  const create = useMutation(api.tools.create);
-  const tools = useQuery(api.tools.list, me ? {} : "skip");
-  const publicTools = useQuery(api.tools.listPublic);
-  const categories = useQuery(api.categories.list);
-  const addCategory = useMutation(api.categories.create);
-
   return (
-    <main style={{ padding: 24 }}>
-      <span>
-        {me === undefined
-          ? "loading..."
-          : me === null
-            ? "none"
-            : `${me.name} (${me.role})`}
-      </span>
-      <p>
-        My profile: Convex sees you as:
-        {isLoading
-          ? "loading..."
-          : isAuthenticated
-            ? "SIGNED IN"
-            : "signed out"}
-      </p>
-      {isAuthenticated ? <SignOutButton /> : <SignInButton />}
-
-      <button
-        onClick={() =>
-          create({
-            name: "Cordless drill",
-            category: "power tools",
-            condition: "good",
-            description: "18V, two batteries",
-          })
-        }
-      >
-        Add test tool
-      </button>
-      <pre>signed in: {JSON.stringify(tools, null, 2)}</pre>
-      <pre>public: {JSON.stringify(publicTools, null, 2)}</pre>
-
-      <pre>categories: {JSON.stringify(categories)}</pre>
-      <button onClick={() => addCategory({ name: "  Garage  " })}>
-        Add category (admin)
-      </button>
+    <main className="pb-16">
+      <RedirectIfSignedIn />
+      <Hero />
+      <PublicToolStrip />
+      <HowItWorks />
+      <footer className="px-4 pt-8 text-center text-sm text-muted">
+        LendLoop, a neighborhood tool-lending board.
+      </footer>
     </main>
   );
 }

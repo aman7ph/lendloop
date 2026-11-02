@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCurrentUser } from "@/libs/useCurrentUser";
+import { useCurrentUser } from "@/lib/useCurrentUser";
 import { Spinner } from "@/components/ui/Spinner";
 import { TopBar } from "./TopBar";
 import { Sidebar } from "./Sidebar";
