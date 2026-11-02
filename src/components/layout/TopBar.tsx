@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { HandHelping } from "lucide-react";
-
+import { AddToolButton } from "@/components/tools/AddToolButton";
 export function TopBar() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
@@ -12,7 +12,10 @@ export function TopBar() {
           </span>
           <span className="text-lg font-semibold">LendLoop</span>
         </Link>
-        <UserButton />
+        <div className="flex items-center gap-3">
+          <AddToolButton />
+          <UserButton />
+        </div>{" "}
       </div>
     </header>
   );

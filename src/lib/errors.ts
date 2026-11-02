@@ -29,6 +29,7 @@ const MESSAGES: Record<string, string> = {
   INVALID_RATING: "Choose a rating from 1 to 5.",
   INVALID_COMMENT: "Comments can be at most 500 characters.",
   ALREADY_REVIEWED: "You already reviewed this loan.",
+  UPLOAD_FAILED: "Photo upload failed. Please try again.",
 };
 
 export function errorCode(e: unknown): string {
