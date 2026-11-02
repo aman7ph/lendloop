@@ -8,6 +8,11 @@ export default defineSchema({
     email: v.string(),
     role: v.union(v.literal("admin"), v.literal("user")),
     trustedLender: v.boolean(),
+    imageUrl: v.optional(v.string()),
+    lenderRatingCount: v.optional(v.number()),
+    lenderRatingSum: v.optional(v.number()),
+    borrowerRatingCount: v.optional(v.number()),
+    borrowerRatingSum: v.optional(v.number()),
   }).index("by_clerk", ["clerkId"]),
 
   tools: defineTable({
@@ -17,6 +22,7 @@ export default defineSchema({
     condition: v.string(),
     description: v.string(),
     maxLoanDays: v.optional(v.number()),
+    imageIds: v.optional(v.array(v.id("_storage"))),
   })
     .index("by_owner", ["ownerId"])
     .index("by_category", ["category"]),
@@ -59,4 +65,15 @@ export default defineSchema({
     name: v.string(),
     createdBy: v.optional(v.id("users")),
   }).index("by_name", ["name"]),
+  reviews: defineTable({
+    loanId: v.id("loans"),
+    reviewerId: v.id("users"),
+    revieweeId: v.id("users"),
+    revieweeRole: v.union(v.literal("lender"), v.literal("borrower")),
+    rating: v.number(),
+    comment: v.string(),
+    toolName: v.string(),
+  })
+    .index("by_loan_reviewer", ["loanId", "reviewerId"])
+    .index("by_reviewee", ["revieweeId"]),
 });

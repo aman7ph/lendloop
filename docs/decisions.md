@@ -90,3 +90,11 @@ No other transitions are allowed.
 - D26: A borrower may hold only one pending request per tool.
 - D27: Only the lender can approve or decline. The lender or an admin can mark
   a loan returned.
+- D28: Reviews attach to a loan, not to a user pair. Only the lender and
+  borrower of a loan with status "returned" can review each other, once each.
+- D29: Rating is an integer 1-5, comment max 500 chars, validated on the
+  server. Reviews cannot be edited. The reviewer or an admin can delete.
+- D30: Rating aggregates (sum, count) are stored per role on the user and
+  updated in the same transaction as the review, so they cannot drift.
+- D31: A tool has at most 3 images, enforced on the server. The public list
+  never includes images.
