@@ -66,3 +66,27 @@ No other transitions are allowed.
   rows always get role "user". store never modifies role or trustedLender.
 - D13: Authorization helpers (requireUser, requireAdmin) live in
   convex/lib/auth.ts and are the first call in every protected function.
+- D14: Signed-in users see the owner's name and Trusted Lender badge, never the
+  owner's email or ids beyond what the UI needs. The public list shows no ids.
+- D15: Tool input is validated and normalised on the server (length limits,
+  category allow-list). The client's validation is UX only.
+- D16: "Available" means no approved loan that has started and is unreturned.
+  Overdue loans therefore still count as unavailable.
+- D17: Categories are a table managed by admins only. Tools store the
+  normalised category name. Renaming is not supported.
+- D18: Category names are normalised (trim, lowercase, collapsed spaces) and
+  validated on the server, so duplicates differing only by case cannot exist.
+- D19: A category used by any tool cannot be deleted (same principle as D10).
+- D20: Default categories are seeded by an internal mutation, which is not
+  callable from clients.
+- D21: Approving a request automatically declines pending requests on the same
+  tool whose dates overlap (declineReason "auto_overlap").
+- D22: Loan times are exact moments. Start may not be in the past (5 minute
+  grace for clock skew). End must be strictly after start.
+- D23: Each tool has an owner-defined maxLoanDays (default 14, ceiling 60).
+- D24: Overlap uses half-open intervals [start, end), so back-to-back loans do
+  not conflict.
+- D25: Overlap is re-checked at approval time, not only at request time.
+- D26: A borrower may hold only one pending request per tool.
+- D27: Only the lender can approve or decline. The lender or an admin can mark
+  a loan returned.

@@ -16,6 +16,7 @@ export default defineSchema({
     category: v.string(),
     condition: v.string(),
     description: v.string(),
+    maxLoanDays: v.optional(v.number()),
   })
     .index("by_owner", ["ownerId"])
     .index("by_category", ["category"]),
@@ -34,6 +35,9 @@ export default defineSchema({
       v.literal("returned"),
     ),
     returnedAt: v.optional(v.number()),
+    declineReason: v.optional(
+      v.union(v.literal("lender"), v.literal("auto_overlap")),
+    ),
   })
     .index("by_borrower", ["borrowerId"])
     .index("by_lender", ["lenderId"])
@@ -50,4 +54,9 @@ export default defineSchema({
   })
     .index("by_key", ["idempotencyKey"])
     .index("by_loan", ["loanId"]),
+
+  categories: defineTable({
+    name: v.string(),
+    createdBy: v.optional(v.id("users")),
+  }).index("by_name", ["name"]),
 });
