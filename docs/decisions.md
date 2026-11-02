@@ -61,3 +61,8 @@ No other transitions are allowed.
   history is kept.
 - D11: loans store a toolName snapshot so history still displays after the tool
   is deleted.
+- D12: users rows are created lazily on first sign-in via users.store, which
+  takes no arguments. Identity fields come only from the verified token. New
+  rows always get role "user". store never modifies role or trustedLender.
+- D13: Authorization helpers (requireUser, requireAdmin) live in
+  convex/lib/auth.ts and are the first call in every protected function.
