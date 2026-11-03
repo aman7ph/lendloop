@@ -1,4 +1,4 @@
-import { Compass, Package, Shield, LucideIcon } from "lucide-react";
+import { Compass, Package, Shield, LucideIcon, Star } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -11,6 +11,7 @@ export const NAV: NavItem[] = [
   { href: "/browse", label: "Browse tools", icon: Compass },
   { href: "/activity", label: "My activity", icon: Package },
   { href: "/admin", label: "Admin", icon: Shield, adminOnly: true },
+  { href: "/reviews", label: "My reviews", icon: Star },
 ];
 
 export const visibleNav = (isAdmin: boolean) =>

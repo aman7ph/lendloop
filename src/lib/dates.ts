@@ -16,3 +16,10 @@ const fmt = new Intl.DateTimeFormat(undefined, {
 
 export const formatRange = (start: number, end: number) =>
   `${fmt.format(start)} – ${fmt.format(end)}`;
+
+const dayFmt = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+export const formatDay = (ms: number) => dayFmt.format(ms);

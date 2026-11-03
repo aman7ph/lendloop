@@ -27,6 +27,8 @@ async function toView(ctx: QueryCtx, loan: Doc<"loans">, now: number) {
     borrowerName: borrower?.name ?? "Unknown",
     lenderName: lender?.name ?? "Unknown",
     lenderTrusted: lender?.trustedLender ?? false,
+    borrowerId: loan.borrowerId,
+    lenderId: loan.lenderId,
   };
 }
 

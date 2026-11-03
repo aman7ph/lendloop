@@ -117,3 +117,11 @@ No other transitions are allowed.
 - D39: Borrowers can cancel their own pending requests. The loan moves to
   "cancelled" instead of being deleted, so history is kept and the automation
   step can notify the lender. Approved loans cannot be cancelled by the borrower.
+- D40: Ratings and reviews are visible to signed-in members only. The public
+  page shows none.
+- D41: The profile query takes a string and validates it, returning null for
+  an invalid id, so a bad URL shows "not found" instead of crashing.
+- D42: Only a review's author can delete it (admins can delete any). Deletion
+  reverses the rating aggregates in the same transaction.
+- D43: Tool listings expose only the owner's lender rating (average and count),
+  never individual reviews.

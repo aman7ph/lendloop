@@ -1,4 +1,4 @@
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Star } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { categoryStyle } from "@/lib/categoryStyle";
@@ -39,11 +39,19 @@ export function ToolCard({ tool, onOpen }: { tool: Tool; onOpen: () => void }) {
           {tool.isMine ? (
             <p className="text-sm text-muted">Your listing</p>
           ) : (
-            tool.ownerTrusted && (
-              <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
-                <ShieldCheck size={14} /> Trusted lender
-              </p>
-            )
+            <p className="mt-0.5 flex items-center gap-3 text-sm text-muted">
+              {tool.ownerRating !== null && (
+                <span className="flex items-center gap-1">
+                  <Star size={14} className="text-accent" fill="currentColor" />{" "}
+                  {tool.ownerRating}
+                </span>
+              )}
+              {tool.ownerTrusted && (
+                <span className="flex items-center gap-1">
+                  <ShieldCheck size={14} /> Trusted
+                </span>
+              )}
+            </p>
           )}
         </div>
         <Avatar name={tool.ownerName} imageUrl={tool.ownerImageUrl} size={32} />

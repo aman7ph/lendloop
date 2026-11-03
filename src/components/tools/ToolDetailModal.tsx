@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { BorrowForm } from "../loans/BorrowForm";
 import { ToolImages } from "./ToolImages";
 import { Tool } from "./types";
+import Link from "next/link";
 
 export function ToolDetailModal({
   tool,
@@ -36,12 +37,16 @@ export function ToolDetailModal({
 
       <div className="mt-4 flex items-center gap-3 rounded-2xl bg-brand-soft/60 p-3">
         <Avatar name={tool.ownerName} imageUrl={tool.ownerImageUrl} size={40} />
-        <div className="min-w-0 flex-1">
+        <Link href={`/profile/${tool.ownerId}`} className="min-w-0 flex-1">
           <p className="truncate font-semibold">{tool.ownerName}</p>
           <p className="text-sm text-muted">
-            {tool.isMine ? "That's you" : "Lender"}
+            {tool.isMine
+              ? "That's you"
+              : tool.ownerRating !== null
+                ? `★ ${tool.ownerRating} (${tool.ownerRatingCount}) as a lender`
+                : "No ratings yet"}
           </p>
-        </div>
+        </Link>
         {tool.ownerTrusted && <ShieldCheck className="text-brand" />}
       </div>
 

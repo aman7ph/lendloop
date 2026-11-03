@@ -76,5 +76,6 @@ export default defineSchema({
     toolName: v.string(),
   })
     .index("by_loan_reviewer", ["loanId", "reviewerId"])
-    .index("by_reviewee", ["revieweeId"]),
+    .index("by_reviewee", ["revieweeId"])
+    .index("by_reviewer", ["reviewerId"]),
 });

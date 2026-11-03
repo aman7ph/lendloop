@@ -121,6 +121,12 @@ export const list = query({
           ownerId: t.ownerId,
           ownerImageUrl: owner?.imageUrl ?? null,
           ownerTrusted: owner?.trustedLender ?? false,
+          ownerRating: owner?.lenderRatingCount
+            ? Math.round(
+                ((owner.lenderRatingSum ?? 0) / owner.lenderRatingCount) * 10,
+              ) / 10
+            : null,
+          ownerRatingCount: owner?.lenderRatingCount ?? 0,
           maxLoanDays: t.maxLoanDays ?? DEFAULT_MAX_LOAN_DAYS,
           imageUrls: await imageUrls(ctx, t.imageIds),
         };

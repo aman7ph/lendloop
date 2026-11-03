@@ -3,14 +3,13 @@ import { Package } from "lucide-react";
 import { formatRange } from "@/lib/dates";
 import { StatusBadge } from "./StatusBadge";
 import { Loan } from "./types";
+import Link from "next/link";
 
 type Props = { loan: Loan; role: "borrower" | "lender"; children?: ReactNode };
 
 export function LoanCard({ loan, role, children }: Props) {
-  const other =
-    role === "borrower"
-      ? `Lender: ${loan.lenderName}`
-      : `Borrower: ${loan.borrowerName}`;
+  const otherId = role === "borrower" ? loan.lenderId : loan.borrowerId;
+  const otherName = role === "borrower" ? loan.lenderName : loan.borrowerName;
   const note =
     loan.declineReason === "auto_overlap"
       ? "This tool was lent to someone else for those dates."
@@ -31,7 +30,12 @@ export function LoanCard({ loan, role, children }: Props) {
           <p className="text-sm text-muted">
             {formatRange(loan.startDate, loan.endDate)}
           </p>
-          <p className="text-sm text-muted">{other}</p>
+          <p className="text-sm text-muted">
+            {role === "borrower" ? "Lender: " : "Borrower: "}
+            <Link href={`/profile/${otherId}`} className="hover:underline">
+              {otherName}
+            </Link>
+          </p>
         </div>
         <StatusBadge loan={loan} />
       </div>

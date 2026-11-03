@@ -166,16 +166,19 @@ export const forLoan = query({
   },
 });
 
+/** A member's profile: rating summaries plus recent reviews. Signed-in only. */
 export const profile = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.string() },
   handler: async (ctx, { userId }) => {
     await requireUser(ctx);
-    const u = await ctx.db.get(userId);
+    const id = ctx.db.normalizeId("users", userId);
+    if (!id) return null;
+    const u = await ctx.db.get(id);
     if (!u) return null;
 
     const reviews = await ctx.db
       .query("reviews")
-      .withIndex("by_reviewee", (q) => q.eq("revieweeId", userId))
+      .withIndex("by_reviewee", (q) => q.eq("revieweeId", id))
       .order("desc")
       .take(50);
 
@@ -203,5 +206,28 @@ export const profile = query({
         })),
       ),
     };
+  },
+});
+
+export const given = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    const rows = await ctx.db
+      .query("reviews")
+      .withIndex("by_reviewer", (q) => q.eq("reviewerId", user._id))
+      .order("desc")
+      .take(50);
+    return await Promise.all(
+      rows.map(async (r) => ({
+        id: r._id,
+        revieweeName: (await ctx.db.get(r.revieweeId))?.name ?? "Unknown",
+        revieweeRole: r.revieweeRole,
+        rating: r.rating,
+        comment: r.comment,
+        toolName: r.toolName,
+        at: r._creationTime,
+      })),
+    );
   },
 });
