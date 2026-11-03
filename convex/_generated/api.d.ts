@@ -10,11 +10,13 @@
 
 import type * as automation from "../automation.js";
 import type * as categories from "../categories.js";
+import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_categories from "../lib/categories.js";
 import type * as lib_events from "../lib/events.js";
 import type * as lib_hmac from "../lib/hmac.js";
 import type * as lib_loanRules from "../lib/loanRules.js";
+import type * as lib_verifyAutomation from "../lib/verifyAutomation.js";
 import type * as loans from "../loans.js";
 import type * as notify from "../notify.js";
 import type * as reviews from "../reviews.js";
@@ -30,11 +32,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   automation: typeof automation;
   categories: typeof categories;
+  http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/categories": typeof lib_categories;
   "lib/events": typeof lib_events;
   "lib/hmac": typeof lib_hmac;
   "lib/loanRules": typeof lib_loanRules;
+  "lib/verifyAutomation": typeof lib_verifyAutomation;
   loans: typeof loans;
   notify: typeof notify;
   reviews: typeof reviews;

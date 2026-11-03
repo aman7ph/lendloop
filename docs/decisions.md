@@ -181,3 +181,13 @@ No other transitions are allowed.
 - D65: Known gap: the alert channel is the same as the delivery channel. In
   production they must differ, for example email or a pager, so an outage of
   one does not hide the other.
+- D66: n8n-to-Convex calls are signed with AUTOMATION_API_SECRET over
+  timestamp.METHOD.path.body, so a signature cannot be reused on another
+  endpoint, and expires after 5 minutes. Failures answer 401 with no detail.
+- D67: Reminder idempotency key is loanId:reminder:YYYY-MM-DD (UTC). Convex
+  chooses the date. n8n echoes it, and write-backs outside a 2-day window are
+  rejected.
+- D68: The overdue list leaves out loans already reminded today and returns
+  names and dates only, never emails or ids beyond the loan id.
+- D69: Known gap: reminders repeat daily with no cap. Production would stop
+  after N reminders and escalate to the lender.
