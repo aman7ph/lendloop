@@ -39,6 +39,7 @@ export default defineSchema({
       v.literal("approved"),
       v.literal("declined"),
       v.literal("returned"),
+      v.literal("cancelled"),
     ),
     returnedAt: v.optional(v.number()),
     declineReason: v.optional(

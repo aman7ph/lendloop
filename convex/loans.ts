@@ -126,7 +126,17 @@ export const decline = mutation({
     await ctx.db.patch(loanId, { status: "declined", declineReason: "lender" });
   },
 });
-
+export const cancel = mutation({
+  args: { loanId: v.id("loans") },
+  handler: async (ctx, { loanId }) => {
+    const user = await requireUser(ctx);
+    const loan = await ctx.db.get(loanId);
+    if (!loan) throw new Error("NOT_FOUND");
+    if (loan.borrowerId !== user._id) throw new Error("FORBIDDEN");
+    if (loan.status !== "pending") throw new Error("INVALID_STATUS");
+    await ctx.db.patch(loanId, { status: "cancelled" });
+  },
+});
 export const markReturned = mutation({
   args: { loanId: v.id("loans") },
   handler: async (ctx, { loanId }) => {

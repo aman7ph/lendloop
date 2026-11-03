@@ -114,3 +114,6 @@ No other transitions are allowed.
 - D38: Next.js Cache Components is disabled. The app is a signed-in, client-driven
   UI over live Convex subscriptions, so server-side caching adds no value and its
   instant-navigation validation conflicts with the auth gate.
+- D39: Borrowers can cancel their own pending requests. The loan moves to
+  "cancelled" instead of being deleted, so history is kept and the automation
+  step can notify the lender. Approved loans cannot be cancelled by the borrower.

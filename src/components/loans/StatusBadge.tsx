@@ -11,5 +11,6 @@ export function StatusBadge({
   if (loan.status === "pending") return <Badge tone="warn">Pending</Badge>;
   if (loan.status === "approved") return <Badge tone="success">Approved</Badge>;
   if (loan.status === "declined") return <Badge tone="alert">Declined</Badge>;
+  if (loan.status === "cancelled") return <Badge>Cancelled</Badge>;
   return <Badge>Returned</Badge>;
 }
