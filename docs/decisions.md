@@ -137,3 +137,18 @@ No other transitions are allowed.
   minutes are rejected, and comparisons are constant-time.
 - D49: Notification events are scheduled from inside the mutation (outbox
   pattern), so they are attempted if and only if the change committed.
+- D50 (updated): The notification step in n8n has two delivery nodes, a logged
+  mock and a Discord webhook. The Discord URL is stored in an n8n credential.
+- D51: Notification payloads contain display names, tool name and dates only.
+  No emails or ids. Adding an email channel later would be a deliberate change
+  to the payload.
+- D52: Automation failures never roll back the business change. The mutation
+  commits first, and delivery is attempted afterwards, recorded, and retried
+  with backoff (30s, 2min, 10min, 4 attempts).
+- D53: Delivery is idempotent. The key is loanId:notify:event, a delivered
+  event is never re-sent or downgraded, and each retry re-signs with a fresh
+  timestamp.
+- D54: Backend environment variables are declared with validators in
+  convex/convex.config.ts and read through the generated typed env object.
+  A missing secret blocks the deploy, and a mistyped name is a compile error.
+  The webhook URL is optional so a missing URL degrades to a recorded failure.

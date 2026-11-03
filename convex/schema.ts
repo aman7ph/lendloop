@@ -57,7 +57,9 @@ export default defineSchema({
     status: v.union(v.literal("sent"), v.literal("failed")),
     attempts: v.number(),
     at: v.number(),
-    idempotencyKey: v.string(), // D9
+    idempotencyKey: v.string(),
+    event: v.optional(v.string()),
+    lastError: v.optional(v.string()),
   })
     .index("by_key", ["idempotencyKey"])
     .index("by_loan", ["loanId"]),

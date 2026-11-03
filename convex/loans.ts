@@ -8,6 +8,7 @@ import {
   START_GRACE_MS,
   overlaps,
 } from "./lib/loanRules";
+import { internal } from "./_generated/api";
 
 async function toView(ctx: QueryCtx, loan: Doc<"loans">, now: number) {
   const [borrower, lender] = await Promise.all([
@@ -71,7 +72,7 @@ export const request = mutation({
       throw new Error("ALREADY_REQUESTED");
     }
 
-    return await ctx.db.insert("loans", {
+    const loanId = await ctx.db.insert("loans", {
       toolId,
       toolName: tool.name,
       borrowerId: user._id,
@@ -80,6 +81,11 @@ export const request = mutation({
       endDate,
       status: "pending",
     });
+    await ctx.scheduler.runAfter(0, internal.notify.send, {
+      loanId,
+      event: "created",
+    });
+    return loanId;
   },
 });
 
@@ -111,8 +117,16 @@ export const approve = mutation({
           declineReason: "auto_overlap",
         });
         autoDeclined.push(other._id);
+        await ctx.scheduler.runAfter(0, internal.notify.send, {
+          loanId: other._id,
+          event: "auto_declined",
+        });
       }
     }
+    await ctx.scheduler.runAfter(0, internal.notify.send, {
+      loanId,
+      event: "approved",
+    });
     return { autoDeclined };
   },
 });
@@ -126,6 +140,10 @@ export const decline = mutation({
     if (loan.lenderId !== user._id) throw new Error("FORBIDDEN");
     if (loan.status !== "pending") throw new Error("INVALID_STATUS");
     await ctx.db.patch(loanId, { status: "declined", declineReason: "lender" });
+    await ctx.scheduler.runAfter(0, internal.notify.send, {
+      loanId,
+      event: "declined",
+    });
   },
 });
 export const cancel = mutation({
@@ -137,6 +155,10 @@ export const cancel = mutation({
     if (loan.borrowerId !== user._id) throw new Error("FORBIDDEN");
     if (loan.status !== "pending") throw new Error("INVALID_STATUS");
     await ctx.db.patch(loanId, { status: "cancelled" });
+    await ctx.scheduler.runAfter(0, internal.notify.send, {
+      loanId,
+      event: "cancelled",
+    });
   },
 });
 export const markReturned = mutation({
@@ -150,6 +172,10 @@ export const markReturned = mutation({
     }
     if (loan.status !== "approved") throw new Error("INVALID_STATUS");
     await ctx.db.patch(loanId, { status: "returned", returnedAt: Date.now() });
+    await ctx.scheduler.runAfter(0, internal.notify.send, {
+      loanId,
+      event: "returned",
+    });
   },
 });
 
