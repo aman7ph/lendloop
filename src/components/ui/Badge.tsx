@@ -4,6 +4,7 @@ const TONES = {
   neutral: "bg-surface text-ink",
   success: "bg-brand-soft text-brand",
   alert: "bg-accent-soft text-danger",
+  warn: "bg-tint-butter text-ink",
 };
 
 export function Badge({

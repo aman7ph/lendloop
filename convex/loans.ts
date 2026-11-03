@@ -23,6 +23,7 @@ async function toView(ctx: QueryCtx, loan: Doc<"loans">, now: number) {
     returnedAt: loan.returnedAt,
     declineReason: loan.declineReason,
     overdue: loan.status === "approved" && loan.endDate < now,
+    expired: loan.status === "pending" && loan.endDate < now,
     borrowerName: borrower?.name ?? "Unknown",
     lenderName: lender?.name ?? "Unknown",
     lenderTrusted: lender?.trustedLender ?? false,
