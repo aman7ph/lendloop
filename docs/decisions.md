@@ -132,3 +132,8 @@ No other transitions are allowed.
   Clerk ids.
 - D47: Admins can delete any listing and mark loans returned, but cannot edit
   listings or act as lenders (D1).
+- D48: Automation uses two separate shared secrets, one per direction. Payloads
+  are signed with HMAC-SHA256 over "timestamp.body", timestamps older than 5
+  minutes are rejected, and comparisons are constant-time.
+- D49: Notification events are scheduled from inside the mutation (outbox
+  pattern), so they are attempted if and only if the change committed.
