@@ -156,3 +156,20 @@ No other transitions are allowed.
   Shared secrets reach it through a git-ignored env file and are read with
   $env, never stored in exported workflow JSON. $env access is enabled
   explicitly. Production would use an external secrets manager instead.
+- D56: n8n deduplicates deliveries by idempotency key using workflow static
+  data with a 24h TTL. A key is recorded only after delivery succeeds, so a
+  failed delivery can be retried. Production would use a database table.
+- D57: User-controlled names are sanitised (no mentions or markdown) before
+  they are placed in chat messages.
+- D58: The n8n workflow answers with deliberate status codes: 200 delivered or
+  duplicate, 401 bad signature, 422 unsupported event, 502 delivery failure.
+  Convex retries only 5xx, 408, 429 and network errors. A 4xx is permanent.
+- D59: A key is stored as delivered only after the channel accepts the message,
+  so a failed delivery can be retried.
+- D60: Node success is not trusted until its failure path has been observed.
+  Discord delivery uses an HTTP Request node, which fails on non-2xx
+  responses, with the webhook URL in an environment variable.
+- D61: Mark delivered reads the idempotency key from the Build message node
+  explicitly, not from the previous node's output.
+- D62: The Convex request timeout (20s) exceeds n8n's worst-case delivery
+  time, so slow deliveries are not misreported as failures.

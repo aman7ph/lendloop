@@ -20,6 +20,11 @@ services:
       # Keep execution history small.
       - EXECUTIONS_DATA_PRUNE=true
       - EXECUTIONS_DATA_MAX_AGE=168
+      # Lets Code nodes use Node's crypto module (needed for HMAC verification).
+      - NODE_FUNCTION_ALLOW_BUILTIN=crypto
+      # Stops the harmless telemetry error in the logs.
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
     volumes:
       - n8n_data:/home/node/.n8n
 

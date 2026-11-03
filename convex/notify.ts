@@ -6,7 +6,7 @@ import { hmacHex } from "./lib/hmac";
 
 const MAX_ATTEMPTS = 4;
 const BACKOFF_MS = [30_000, 120_000, 600_000];
-const REQUEST_TIMEOUT_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 20_000;
 
 export const buildPayload = internalQuery({
   args: { loanId: v.id("loans"), event: notifyEvent, key: v.string() },
