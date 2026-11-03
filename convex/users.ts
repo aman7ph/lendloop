@@ -1,5 +1,6 @@
+import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireUser } from "./lib/auth";
+import { requireAdmin, requireUser } from "./lib/auth";
 
 export const store = mutation({
   args: {},
@@ -56,5 +57,30 @@ export const me = query({
       role: user.role,
       trustedLender: user.trustedLender,
     };
+  },
+});
+
+export const listForAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const users = await ctx.db.query("users").take(200);
+    return users.map((u) => ({
+      id: u._id,
+      name: u.name,
+      imageUrl: u.imageUrl ?? null,
+      role: u.role,
+      trustedLender: u.trustedLender,
+    }));
+  },
+});
+
+export const setTrusted = mutation({
+  args: { userId: v.id("users"), trusted: v.boolean() },
+  handler: async (ctx, { userId, trusted }) => {
+    await requireAdmin(ctx);
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("NOT_FOUND");
+    await ctx.db.patch(userId, { trustedLender: trusted });
   },
 });

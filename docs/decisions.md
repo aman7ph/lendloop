@@ -125,3 +125,10 @@ No other transitions are allowed.
   reverses the rating aggregates in the same transaction.
 - D43: Tool listings expose only the owner's lender rating (average and count),
   never individual reviews.
+- D44: Admin pages render only for admins, but this is UX. Each admin function
+  calls requireAdmin on the server.
+- D45: setTrusted sets an explicit value (idempotent), not a toggle.
+- D46: The admin member list shows names and flags only, never emails or
+  Clerk ids.
+- D47: Admins can delete any listing and mark loans returned, but cannot edit
+  listings or act as lenders (D1).
