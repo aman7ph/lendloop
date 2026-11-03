@@ -1,0 +1,27 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      # Bound to localhost only: the editor is not exposed to your network.
+      - "127.0.0.1:5678:5678"
+    environment:
+      - TZ=Africa/Addis_Ababa
+      - GENERIC_TIMEZONE=Africa/Addis_Ababa
+      # Encrypts credentials stored by n8n. Keep it stable and backed up.
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      # Public URL used to build webhook addresses (changes when we add a tunnel).
+      - WEBHOOK_URL=${N8N_PUBLIC_URL:-http://localhost:5678/}
+      # Shared secrets, read in workflows via $env (never stored in workflow JSON).
+      - LENDLOOP_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+      - LENDLOOP_API_SECRET=${AUTOMATION_API_SECRET}
+      # Allow $env access in expressions (see decision D55 below).
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      # Keep execution history small.
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

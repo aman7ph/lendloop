@@ -152,3 +152,7 @@ No other transitions are allowed.
   convex/convex.config.ts and read through the generated typed env object.
   A missing secret blocks the deploy, and a mistyped name is a compile error.
   The webhook URL is optional so a missing URL degrades to a recorded failure.
+- D55: n8n runs in Docker bound to localhost, with a pinned image version.
+  Shared secrets reach it through a git-ignored env file and are read with
+  $env, never stored in exported workflow JSON. $env access is enabled
+  explicitly. Production would use an external secrets manager instead.

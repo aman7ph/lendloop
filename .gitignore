@@ -46,3 +46,4 @@ CLAUDE.md
 skills-lock.json
 !.env.example
 experimental_sandbox/*
+n8n/.env
