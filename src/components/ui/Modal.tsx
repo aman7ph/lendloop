@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type Props = {
@@ -21,7 +22,9 @@ export function Modal({ title, eyebrow, onClose, children }: Props) {
     };
   }, [onClose]);
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 backdrop-blur-sm md:items-center md:p-6"
       onClick={onClose}
@@ -52,6 +55,7 @@ export function Modal({ title, eyebrow, onClose, children }: Props) {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
