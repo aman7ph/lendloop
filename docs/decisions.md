@@ -173,3 +173,11 @@ No other transitions are allowed.
   explicitly, not from the previous node's output.
 - D62: The Convex request timeout (20s) exceeds n8n's worst-case delivery
   time, so slow deliveries are not misreported as failures.
+- D63: Failure branches respond to the caller first, then raise an error, so
+  n8n marks the execution failed and the linked error workflow alerts. Alerts
+  contain the workflow name, error text and a link, never event data.
+- D64: Bad-signature (401) responses are not alerted individually, to avoid
+  noise from probing. Production would alert on bursts.
+- D65: Known gap: the alert channel is the same as the delivery channel. In
+  production they must differ, for example email or a pager, so an outage of
+  one does not hide the other.
