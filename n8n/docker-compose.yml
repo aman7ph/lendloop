@@ -25,6 +25,7 @@ services:
       # Stops the harmless telemetry error in the logs.
       - N8N_DIAGNOSTICS_ENABLED=false
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - DISCORD_ALERT_WEBHOOK_URL=${DISCORD_ALERT_WEBHOOK_URL}
     volumes:
       - n8n_data:/home/node/.n8n
 
