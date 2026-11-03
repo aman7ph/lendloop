@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -18,7 +19,7 @@ export function AllLoans() {
   if (loans === undefined) return <Spinner />;
   if (loans.length === 0) return <EmptyState text="No loans yet." />;
 
-  async function returned(loanId: (typeof loans)[number]["id"]) {
+  async function returned(loanId: Id<"loans">) {
     setError("");
     try {
       await markReturned({ loanId });
