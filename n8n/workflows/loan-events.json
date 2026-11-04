@@ -1,0 +1,506 @@
+{
+  "name": "LendLoop loan events",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lendloop-events",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "034c9b09-eff4-4480-8e6a-2c7862fea4a0",
+      "name": "Webhook",
+      "webhookId": "054ab3b7-a4f2-4106-ab29-67a059c6c9cc"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nconst MAX_AGE_MS = 5 * 60 * 1000; // replay window (D48)\nconst fail = (reason) => [{ json: { ok: false, reason } }];\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst secret = $env.LENDLOOP_WEBHOOK_SECRET;\n\nif (!secret) return fail('secret_not_configured');\n\nconst timestamp = headers['x-lendloop-timestamp'];\nconst signatureHeader = headers['x-lendloop-signature'] || '';\nif (!timestamp || !signatureHeader.startsWith('sha256=')) {\n  return fail('missing_headers');\n}\nif (!/^\\d+$/.test(timestamp) || Math.abs(Date.now() - Number(timestamp)) > MAX_AGE_MS) {\n  return fail('stale_or_invalid_timestamp');\n}\n\n// Hash the exact bytes that arrived, not a re-serialized copy.\nconst rawBuffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst raw = rawBuffer.toString('utf8');\n\nconst expected = Buffer.from(\n  crypto.createHmac('sha256', secret).update(`${timestamp}.${raw}`).digest('hex'),\n  'hex',\n);\nconst given = Buffer.from(signatureHeader.slice('sha256='.length), 'hex');\n\n// Constant-time comparison.\nif (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) {\n  return fail('bad_signature');\n}\n\n// Only parse the body after the signature is proven valid.\nreturn [{ json: { ok: true, ...JSON.parse(raw) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b6f983a6-046c-4c42-9649-4bac3941352e",
+      "name": "Verify signature"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f88bb752-69ed-4248-b25b-a30cf3c4ea33",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e505b450-5256-43c9-9e6e-5dc91d6634da",
+      "name": "Signature valid?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"error\": \"unauthorized\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        96
+      ],
+      "id": "fb6b191d-04c1-4ab7-8be2-0a2ee0a0a391",
+      "name": "401 Unauthorized"
+    },
+    {
+      "parameters": {
+        "jsCode": "const TTL_MS = 24 * 60 * 60 * 1000;\nconst data = $getWorkflowStaticData('global');\nconst seen = data.seen || {};\nconst now = Date.now();\n\n// Prune old keys so the store cannot grow forever.\nfor (const [key, at] of Object.entries(seen)) {\n  if (now - at > TTL_MS) delete seen[key];\n}\ndata.seen = seen;\n\nconst event = $input.first().json;\nreturn [{ json: { ...event, duplicate: Boolean(seen[event.idempotencyKey]) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "fb960f33-82f5-4915-9ec9-a0df751ca0be",
+      "name": "Check duplicate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3c82b767-3b6a-43e7-a823-304bbbbe58aa",
+              "leftValue": "={{ $json.duplicate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "49ba7121-2b99-4d1e-accb-42a82dd5e201",
+      "name": "Already delivered?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"status\": \"duplicate_ignored\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1040,
+        -192
+      ],
+      "id": "0c5b0e97-0635-496f-943a-1036e7d595eb",
+      "name": "200 Duplicate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $input.first().json;\n\n// Names are user-controlled and go into a chat message: strip mentions and markdown.\nconst clean = (s) => String(s ?? '').replace(/[@`*_~|>\\[\\]()<\\\\]/g, '').trim().slice(0, 60);\nconst fmt = (ms) =>\n  new Date(ms).toLocaleString('en-GB', {\n    timeZone: 'Africa/Addis_Ababa',\n    dateStyle: 'medium',\n    timeStyle: 'short',\n  });\n\nconst other = clean(e.otherName);\nconst tool = clean(e.toolName);\nconst when = `${fmt(e.startDate)} to ${fmt(e.endDate)}`;\n\nconst templates = {\n  created: `${other} would like to borrow your ${tool} (${when}).`,\n  approved: `${other} approved your request for ${tool} (${when}).`,\n  declined: `${other} declined your request for ${tool}.`,\n  auto_declined: `your request for ${tool} (${when}) could not go ahead, because it was lent to someone else for those dates.`,\n  cancelled: `${other} cancelled their request for your ${tool}.`,\n  returned: `${other} marked ${tool} as returned. You can now leave a rating.`,\n};\n\nconst body = templates[e.event];\nif (!body) {\n  return [{ json: { ok: false, reason: 'unsupported_event', event: String(e.event).slice(0, 40) } }];\n}\nreturn [{\n  json: {\n    ok: true,\n    idempotencyKey: e.idempotencyKey,\n    event: e.event,\n    to: clean(e.recipientName),\n    message: `Hi ${clean(e.recipientName)}, ${body}`,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "0e862cf1-264f-49fd-9875-a16701dc3ef3",
+      "name": "Build message"
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $input.first().json;\nreturn [{ json: { ...m, channel: 'mock-log', loggedAt: new Date().toISOString() } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        -80
+      ],
+      "id": "b1342abc-c3d8-45d7-9e21-8706e662ab8c",
+      "name": "Log notification (mock)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $('Build message').first().json;\nconst data = $getWorkflowStaticData('global');\ndata.seen = data.seen || {};\ndata.seen[m.idempotencyKey] = Date.now();\nreturn [{ json: m }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        -208
+      ],
+      "id": "fe7d7fff-a5d2-496d-a0b3-24372801b572",
+      "name": "Mark delivered"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"status\": \"delivered\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2112,
+        -208
+      ],
+      "id": "21606d3b-d0ba-47f1-8c7b-b4b4b457f1bb",
+      "name": "200 Delivered"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "627751e4-fecb-479d-9a36-08fc44a6ac6b",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "3d47fee8-36f1-4af6-9b62-e608b9a3af6a",
+      "name": "Message built?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"error\": \"unsupported_event\" }",
+        "options": {
+          "responseCode": 422
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1504,
+        144
+      ],
+      "id": "c0f6c69c-ec2a-4434-ab47-924f66dc03bc",
+      "name": "422 Unsupported event"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"content\": $json.message, \"allowed_mentions\": { \"parse\": [] } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1664,
+        -80
+      ],
+      "id": "5559ac49-ffcb-4b58-a0ac-3fee854eac81",
+      "name": "Send to Discord.",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"error\": \"delivery_failed\" }",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1904,
+        16
+      ],
+      "id": "fed4c832-0499-4542-88f8-adaa7a6dea66",
+      "name": "502 Delivery failed"
+    },
+    {
+      "parameters": {
+        "jsCode": "throw new Error('Notification delivery to Discord failed after retries');"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        16
+      ],
+      "id": "e09f0b0d-9072-4a93-8ed1-42fa2b27a553",
+      "name": "Raise: delivery failed1"
+    },
+    {
+      "parameters": {
+        "jsCode": "throw new Error('Received an event type this workflow does not support');"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        144
+      ],
+      "id": "df1c019a-025e-4dd7-b344-424b358cb605",
+      "name": "Raise: delivery failed"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify signature": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "Check duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "401 Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check duplicate": {
+      "main": [
+        [
+          {
+            "node": "Already delivered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already delivered?": {
+      "main": [
+        [
+          {
+            "node": "200 Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build message": {
+      "main": [
+        [
+          {
+            "node": "Message built?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log notification (mock)": {
+      "main": [
+        [
+          {
+            "node": "Send to Discord.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark delivered": {
+      "main": [
+        [
+          {
+            "node": "200 Delivered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message built?": {
+      "main": [
+        [
+          {
+            "node": "Log notification (mock)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "422 Unsupported event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Discord.": {
+      "main": [
+        [
+          {
+            "node": "Mark delivered",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "502 Delivery failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "502 Delivery failed": {
+      "main": [
+        [
+          {
+            "node": "Raise: delivery failed1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "401 Unauthorized": {
+      "main": [
+        []
+      ]
+    },
+    "422 Unsupported event": {
+      "main": [
+        [
+          {
+            "node": "Raise: delivery failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "D0Qx45hnXO4hQ0V4",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "aac6189e-0e55-4e2a-9637-5f3046b2dbd4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "65e90b3a05fdba240fe8d64f695c51f9048ae672272dd5565a47297bc1888bf9"
+  },
+  "id": "lr3ho2zg8aMWYwFk",
+  "tags": []
+}

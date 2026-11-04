@@ -1,0 +1,309 @@
+{
+  "name": "LendLoop overdue reminders",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7d4c62f4-2737-468a-b79b-d6e0ffc5b2f1",
+      "name": "Schedule (daily 09:00)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst path = '/automation/overdue';\nconst timestamp = String(Date.now());\n// Signed text: timestamp.METHOD.path.body (empty body for GET).\nconst signature = crypto\n  .createHmac('sha256', $env.LENDLOOP_API_SECRET)\n  .update(`${timestamp}.GET.${path}.`)\n  .digest('hex');\n\nreturn [{ json: { url: $env.CONVEX_SITE_URL + path, timestamp, signature: `sha256=${signature}` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e426d066-6d3e-4a76-a9da-e0656616a790",
+      "name": "Sign request"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "=X-LendLoop-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "3f4a0eba-54ec-4356-b5ba-acd89bcc60ca",
+      "name": "Fetch overdue loans",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "loans",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "1a7aa244-e1e3-4feb-824f-4b383555da1b",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "const clean = (s) => String(s ?? '').replace(/[@`*_~|>\\[\\]()<\\\\]/g, '').trim().slice(0, 60);\nconst l = $json;\nconst due = new Date(l.endDate).toLocaleDateString('en-GB', {\n  timeZone: 'Africa/Addis_Ababa',\n  dateStyle: 'medium',\n});\nconst days = Number(l.daysOverdue);\n\nreturn {\n  json: {\n    loanId: l.loanId,\n    date: l.date,\n    message: `Hi ${clean(l.borrowerName)}, a reminder: ${clean(l.toolName)} was due back on ${due} and is ${days} day${days === 1 ? '' : 's'} overdue. Please return it to ${clean(l.lenderName)}.`,\n  },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "062f9dad-b679-46e4-811c-d5d93ef20e5b",
+      "name": "Build reminder"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"content\": $json.message, \"allowed_mentions\": { \"parse\": [] } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "723eaef4-2728-4449-954a-bb3846a8fd29",
+      "name": "Send reminder",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const l = $('Build reminder').item.json;\nreturn { json: { loanId: l.loanId, date: l.date, status: 'sent', attempts: 1 } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        -96
+      ],
+      "id": "44fff46b-1c6e-43d4-9eb0-084e48f43f33",
+      "name": "Prepare result (sent)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const l = $('Build reminder').item.json;\nreturn {\n  json: {\n    loanId: l.loanId,\n    date: l.date,\n    status: 'failed',\n    attempts: 3,\n    error: 'Discord delivery failed after retries',\n  },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        96
+      ],
+      "id": "c69a4c96-f186-4bff-8cfe-a16855155836",
+      "name": "Prepare result (failed)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst path = '/automation/reminder-result';\nconst body = JSON.stringify({\n  loanId: $json.loanId,\n  date: $json.date,\n  status: $json.status,\n  attempts: $json.attempts,\n  ...($json.error ? { error: $json.error } : {}),\n});\nconst timestamp = String(Date.now());\nconst signature = crypto\n  .createHmac('sha256', $env.LENDLOOP_API_SECRET)\n  .update(`${timestamp}.POST.${path}.${body}`)\n  .digest('hex');\n\nreturn {\n  json: { url: $env.CONVEX_SITE_URL + path, timestamp, signature: `sha256=${signature}`, body },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        16
+      ],
+      "id": "8d35ffa8-9fc6-4916-b8d7-26c93f2f7f1a",
+      "name": "Sign write-back"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LendLoop-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1808,
+        16
+      ],
+      "id": "255ed4cc-8600-475f-a438-6b3bcca491c5",
+      "name": "Record result in Convex",
+      "retryOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule (daily 09:00)": {
+      "main": [
+        [
+          {
+            "node": "Sign request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign request": {
+      "main": [
+        [
+          {
+            "node": "Fetch overdue loans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch overdue loans": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Build reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build reminder": {
+      "main": [
+        [
+          {
+            "node": "Send reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send reminder": {
+      "main": [
+        [
+          {
+            "node": "Prepare result (sent)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare result (failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare result (sent)": {
+      "main": [
+        [
+          {
+            "node": "Sign write-back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare result (failed)": {
+      "main": [
+        [
+          {
+            "node": "Sign write-back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign write-back": {
+      "main": [
+        [
+          {
+            "node": "Record result in Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "D0Qx45hnXO4hQ0V4",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "b3a68f8a-4c11-4133-9cb4-38974ac95759",
+  "meta": {
+    "instanceId": "65e90b3a05fdba240fe8d64f695c51f9048ae672272dd5565a47297bc1888bf9"
+  },
+  "id": "7b8IKP9CF24VPabL",
+  "tags": []
+}

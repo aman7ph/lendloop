@@ -1,0 +1,59 @@
+{
+  "name": "LendLoop error alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4594a1ba-cf2a-4ef1-ad8d-07fc6bf8a086",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_ALERT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"content\": \"ALERT: workflow \\\"\" + $json.workflow.name + \"\\\" failed.\\nError: \" + String($json.execution.error.message).slice(0, 300) + \"\\nOpen: \" + $json.execution.url, \"allowed_mentions\": { \"parse\": [] } } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b342ff64-ff13-407f-a956-11b9398dad06",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3989092f-de49-49c8-b556-c18c1f979bc5",
+  "meta": {
+    "instanceId": "65e90b3a05fdba240fe8d64f695c51f9048ae672272dd5565a47297bc1888bf9"
+  },
+  "id": "D0Qx45hnXO4hQ0V4",
+  "tags": []
+}

@@ -202,3 +202,8 @@ No other transitions are allowed.
   URL changes on every start and is set in the Convex environment. The tunnel
   exposes the whole n8n instance, so it runs only during demos. Production
   uses a real domain with TLS and exposes only /webhook/* publicly.
+- D73: The three n8n workflows are exported to n8n/workflows/. They contain no
+  secrets (all read from environment variables). scripts/check-secrets.mjs
+  scans tracked files and git history for any value from the local env files.
+  After importing, set the Error Workflow in the settings of the events and
+  reminders workflows (the id differs per instance).
