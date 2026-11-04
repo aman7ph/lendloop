@@ -191,3 +191,14 @@ No other transitions are allowed.
   names and dates only, never emails or ids beyond the loan id.
 - D69: Known gap: reminders repeat daily with no cap. Production would stop
   after N reminders and escalate to the lender.
+- D70: The daily reminder workflow signs its Convex requests with the
+  automation secret. The write-back body is sent as a raw string identical to
+  the signed bytes. Failed reminders are written back as "failed" and retried
+  on the next run, and never block a later successful send.
+- D71: The reminder workflow stops on a fetch or write-back failure, so the
+  error workflow alerts. Only the Discord send continues on error, to record
+  the failure in Convex.
+- D72: Live demos expose n8n through a temporary Cloudflare quick tunnel. The
+  URL changes on every start and is set in the Convex environment. The tunnel
+  exposes the whole n8n instance, so it runs only during demos. Production
+  uses a real domain with TLS and exposes only /webhook/* publicly.
