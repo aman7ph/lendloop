@@ -78,18 +78,33 @@ async function cleanToolInput(
   return { name, category, condition, description, maxLoanDays };
 }
 
+// export const listPublic = query({
+//   args: {},
+//   handler: async (ctx) => {
+//     const now = Date.now();
+//     const tools = await ctx.db.query("tools").take(100);
+//     return await Promise.all(
+//       tools.map(async (t) => ({
+//         name: t.name,
+//         category: t.category,
+//         available: !(await isOnLoan(ctx, t._id, now)),
+//       })),
+//     );
+//   },
+// });
+
 export const listPublic = query({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
     const tools = await ctx.db.query("tools").take(100);
-    return await Promise.all(
-      tools.map(async (t) => ({
-        name: t.name,
-        category: t.category,
-        available: !(await isOnLoan(ctx, t._id, now)),
-      })),
-    );
+    const out = [];
+    for (const t of tools) {
+      if (!(await isOnLoan(ctx, t._id, now))) {
+        out.push({ name: t.name, category: t.category }); // explicit projection
+      }
+    }
+    return out;
   },
 });
 

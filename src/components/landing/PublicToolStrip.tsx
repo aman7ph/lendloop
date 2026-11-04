@@ -41,14 +41,17 @@ export function PublicToolStrip() {
                 <Icon size={36} className="text-muted" />
               </div>
               <p className="mt-3 truncate font-semibold">{t.name}</p>
-              <div className="mt-1 flex items-center justify-between gap-2">
+              {/* <div className="mt-1 flex items-center justify-between gap-2">
                 <span className="truncate text-xs capitalize text-muted">
                   {t.category}
                 </span>
                 <Badge tone={t.available ? "success" : "alert"}>
                   {t.available ? "Available" : "Borrowed"}
                 </Badge>
-              </div>
+              </div> */}
+              <span className="text-xs capitalize text-muted">
+                {t.category}
+              </span>
             </li>
           );
         })}

@@ -8,6 +8,7 @@ import { ToolCard } from "@/components/tools/ToolCard";
 import { ToolSearch } from "@/components/tools/ToolSearch";
 import { ToolDetailModal } from "@/components/tools/ToolDetailModal";
 import { Tool } from "@/components/tools/types";
+import { CategoryChips } from "@/components/tools/CategoryChips";
 
 function greeting() {
   const h = new Date().getHours();
@@ -19,16 +20,30 @@ export default function BrowsePage() {
   const tools = useQuery(api.tools.list, {});
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const categories = useQuery(api.categories.list) ?? [];
+  const [category, setCategory] = useState("");
+
+  // const visible = useMemo(() => {
+  //   const q = search.trim().toLowerCase();
+  //   if (!q) return tools ?? [];
+  //   return (tools ?? []).filter((t) =>
+  //     [t.name, t.ownerName, t.category].some((field) =>
+  //       field.toLowerCase().includes(q),
+  //     ),
+  //   );
+  // }, [tools, search]);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return tools ?? [];
-    return (tools ?? []).filter((t) =>
-      [t.name, t.ownerName, t.category].some((field) =>
-        field.toLowerCase().includes(q),
-      ),
+    return (tools ?? []).filter(
+      (t) =>
+        (!category || t.category === category) &&
+        (!q ||
+          [t.name, t.ownerName, t.category].some((f) =>
+            f.toLowerCase().includes(q),
+          )),
     );
-  }, [tools, search]);
+  }, [tools, search, category]);
 
   const open: Tool | undefined = tools?.find((t) => t.id === openId);
 
@@ -43,7 +58,11 @@ export default function BrowsePage() {
       </p>
 
       <ToolSearch value={search} onChange={setSearch} />
-
+      <CategoryChips
+        categories={categories}
+        value={category}
+        onChange={setCategory}
+      />
       <div className="mt-6">
         {tools === undefined ? (
           <Spinner />
